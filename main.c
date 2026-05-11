@@ -26,8 +26,67 @@ static void trim_inplace(char *s) {
         n--;
     }
 }
-
 static int parse_edge_line(char *line, int *u, int *v) {
+    char *p;
+    char *endptr;
+    long lu;
+    long lv;
+
+    trim_inplace(line);
+
+    /* linha vazia */
+    if (line[0] == '\0')
+        return -1;
+
+    /*
+       Aceita:
+       100,200
+       100 200
+       100 , 200
+       100\t200
+       100, 200
+    */
+
+    p = line;
+
+    errno = 0;
+    lu = strtol(p, &endptr, 10);
+    if (errno != 0 || endptr == p)
+        return -2;
+    p = endptr;
+
+    while (*p && is_ascii_space((unsigned char)*p))
+        p++;
+
+    if (*p == ',') {
+        p++;
+        while (*p && is_ascii_space((unsigned char)*p))
+            p++;
+    } else {
+        if (*p == '\0')
+            return -2;
+    }
+
+    errno = 0;
+    lv = strtol(p, &endptr, 10);
+    if (errno != 0 || endptr == p)
+        return -2;
+    p = endptr;
+
+    while (*p && is_ascii_space((unsigned char)*p))
+        p++;
+    if (*p != '\0')
+        return -2;
+
+    if (lu < INT_MIN || lu > INT_MAX || lv < INT_MIN || lv > INT_MAX)
+        return -5;
+
+    *u = (int)lu;
+    *v = (int)lv;
+    return 0;
+}
+
+/*static int parse_edge_line(char *line, int *u, int *v) {
     char *comma;
     char *rest;
     char *endptr;
@@ -66,13 +125,14 @@ static int parse_edge_line(char *line, int *u, int *v) {
     *u = (int)lu;
     *v = (int)lv;
     return 0;
-}
+}*/
 
 static void print_report(Graph *g) {
     DegreeStats ds;
     MultigraphStats ms;
     ComponentStats cs;
     size_t i;
+    int bp;
 
     memset(&ds, 0, sizeof(ds));
     memset(&ms, 0, sizeof(ms));
@@ -96,6 +156,10 @@ static void print_report(Graph *g) {
     printf("\nGraph type: %s\n", ms.is_simple ? "Simple" : "Multigraph");
     printf("Loops: %d\n", ms.loops);
     printf("Multiple edges: %d\n", ms.multiple_edges);
+
+    bp = graph_is_bipartite(g);
+    printf("Bipartite: %s\n",
+           bp < 0 ? "unknown (error)" : (bp ? "yes" : "no"));
 
     printf("\nConnected components: %d\n", cs.num_components);
     printf("Component sizes: [");
@@ -162,10 +226,10 @@ int main(int argc, char **argv) {
         if (pr == -1)
             continue;
         if (pr != 0) {
-            fprintf(stderr, "%s:%d: malformed edge (expected u,v)\n", argv[1],
-                    line_no);
-            err = 1;
-            break;
+            trim_inplace(work);
+            fprintf(stderr, "%s:%d: malformed edge skipped: \"%s\"\n",
+                    argv[1], line_no, work);
+            continue;
         }
 
         add_edge(g, u, v);

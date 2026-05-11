@@ -40,4 +40,14 @@ void free_component_stats(ComponentStats *s);
 
 void dfs(const Graph *g, int start_vertex, unsigned char *visited);
 
+/*
+ * Returns:
+ *  - 1 if the graph is bipartite
+ *  - 0 if it is not bipartite
+ *  - -1 on out-of-memory
+ *
+ * Note: any self-loop makes the graph non-bipartite.
+ */
+int graph_is_bipartite(const Graph *g);
+
 #endif

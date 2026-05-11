@@ -564,3 +564,62 @@ void free_component_stats(ComponentStats *s) {
     s->sizes_len = 0;
     s->num_components = 0;
 }
+
+int graph_is_bipartite(const Graph *g) {
+    int n;
+    int *color;
+    int *q;
+    int qh;
+    int qt;
+    int i;
+    int v;
+    size_t k;
+    int w;
+
+    if (!g)
+        return 1;
+    if (g->loops > 0)
+        return 0;
+
+    n = g->n_vertices;
+    if (n <= 0)
+        return 1;
+
+    color = (int *)malloc((size_t)n * sizeof(int));
+    q = (int *)malloc((size_t)n * sizeof(int));
+    if (!color || !q) {
+        free(color);
+        free(q);
+        return -1;
+    }
+
+    for (i = 0; i < n; i++)
+        color[i] = -1;
+
+    for (i = 0; i < n; i++) {
+        if (color[i] != -1)
+            continue;
+        qh = 0;
+        qt = 0;
+        color[i] = 0;
+        q[qt++] = i;
+        while (qh < qt) {
+            v = q[qh++];
+            for (k = 0; k < g->adj[v].len; k++) {
+                w = g->adj[v].data[k];
+                if (color[w] == -1) {
+                    color[w] = 1 - color[v];
+                    q[qt++] = w;
+                } else if (color[w] == color[v]) {
+                    free(q);
+                    free(color);
+                    return 0;
+                }
+            }
+        }
+    }
+
+    free(q);
+    free(color);
+    return 1;
+}
