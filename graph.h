@@ -2,6 +2,7 @@
 #define GRAPH_H
 
 #include <stddef.h>
+#include <stdio.h>
 
 typedef struct Graph Graph;
 
@@ -49,5 +50,11 @@ void dfs(const Graph *g, int start_vertex, unsigned char *visited);
  * Note: any self-loop makes the graph non-bipartite.
  */
 int graph_is_bipartite(const Graph *g);
+
+/*
+ * Escreve o grafo (não direcionado) no formato DOT / Graphviz em `fp`.
+ * Cada nó interno v0..vN-1 aparece com rótulo igual ao id original do arquivo.
+ */
+void graph_write_dot(const Graph *g, FILE *fp);
 
 #endif

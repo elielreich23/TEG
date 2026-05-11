@@ -242,8 +242,19 @@ int main(int argc, char **argv) {
 
     fclose(fp);
 
-    if (!err)
+    if (!err) {
+        FILE *dotf = fopen("graph_export.dot", "w");
+        if (dotf) {
+            graph_write_dot(g, dotf);
+            fclose(dotf);
+            fprintf(stderr,
+                    "Grafo exportado para graph_export.dot "
+                    "(Graphviz: dot -Tpng -O graph_export.dot)\n");
+        } else {
+            perror("graph_export.dot");
+        }
         print_report(g);
+    }
 
     free_graph(g);
     return err ? 1 : 0;

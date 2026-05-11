@@ -2,6 +2,7 @@
 
 #include <limits.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -563,6 +564,53 @@ void free_component_stats(ComponentStats *s) {
     s->sizes = NULL;
     s->sizes_len = 0;
     s->num_components = 0;
+}
+
+static int orig_for_index(const Graph *g, int idx) {
+    size_t i;
+    IdNode *n;
+
+    for (i = 0; i < g->vertices.nbuckets; i++) {
+        for (n = g->vertices.buckets[i]; n; n = n->next) {
+            if (n->index == idx)
+                return n->orig_id;
+        }
+    }
+    return idx;
+}
+
+void graph_write_dot(const Graph *g, FILE *fp) {
+    int n;
+    int i;
+    size_t k;
+    int j;
+
+    if (!fp)
+        return;
+
+    fputs("graph G {\n", fp);
+    fputs("  overlap=false;\n", fp);
+    if (!g || g->n_vertices <= 0) {
+        fputs("}\n", fp);
+        return;
+    }
+
+    n = g->n_vertices;
+    for (i = 0; i < n; i++) {
+        fprintf(fp, "  \"v%d\" [label=\"%d\"];\n", i,
+                orig_for_index(g, i));
+    }
+    for (i = 0; i < n; i++) {
+        for (k = 0; k < g->adj[i].len; k++) {
+            j = g->adj[i].data[k];
+            if (i < j) {
+                fprintf(fp, "  \"v%d\" -- \"v%d\";\n", i, j);
+            } else if (i == j) {
+                fprintf(fp, "  \"v%d\" -- \"v%d\";\n", i, i);
+            }
+        }
+    }
+    fputs("}\n", fp);
 }
 
 int graph_is_bipartite(const Graph *g) {
